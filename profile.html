@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile | ChatLoom 💬</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      text-align: center;
+    }
+    #profile-pic {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #aaa;
+      margin-bottom: 1rem;
+    }
+    #username, #email {
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+    }
+    input[type="file"] {
+      margin-top: 1rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>👤 My Profile</h2>
+  <img id="profile-pic" src="https://via.placeholder.com/120" alt="Profile Picture" />
+  <div id="username">Loading username...</div>
+  <div id="email">Loading email...</div>
+
+  <input type="file" id="file-input" />
+  <button onclick="uploadProfilePic()">📤 Upload Picture</button>
+  <br />
+  <button onclick="logout()">🚪 Logout</button>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://hnkugpcnkzunmkbgowxt.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiaW5mcnlwd213ZGtwbmFlaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MjU4MzksImV4cCI6MjA2OTAwMTgzOX0.1MMexu-zrlu5C182gIWgT72SQArD3euFK4lk97IBwcU'
+    )
+
+    const user = await supabase.auth.getUser()
+    if (!user.data.user) {
+      window.location.href = 'login.html'
+    } else {
+      const { email, user_metadata } = user.data.user
+      document.getElementById('email').innerText = `📧 ${email}`
+      document.getElementById('username').innerText = `👤 ${user_metadata?.username || "No username"}`
+      loadProfilePic(user.data.user.id)
+    }
+
+    async function loadProfilePic(userId) {
+      const { data } = await supabase.storage.from('avatars').getPublicUrl(`profile-${userId}.jpg`)
+      if (data?.publicUrl) {
+        document.getElementById('profile-pic').src = data.publicUrl
+      }
+    }
+
+    async function uploadProfilePic() {
+      const file = document.getElementById('file-input').files[0]
+      if (!file) {
+        alert("No file selected!")
+        return
+      }
+
+      const userId = (await supabase.auth.getUser()).data.user.id
+      const filePath = `profile-${userId}.jpg`
+
+      await supabase.storage.from('avatars').upload(filePath, file, {
+        upsert: true,
+        cacheControl: '3600',
+        contentType: file.type
+      })
+
+      loadProfilePic(userId)
+      alert("✅ Uploaded!")
+    }
+
+    async function logout() {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    }
+  </script>
+</body>
+</html>

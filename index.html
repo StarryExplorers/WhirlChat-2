@@ -1,179 +1,414 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>ChatLoom 💬</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log("✅ Service Worker registered!", reg))
+          .catch(err => console.error("❌ SW registration failed:", err));
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f0f5;
-    }
-
-    header {
-      background: #6200ea;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header h1 {
+      background: linear-gradient(135deg, #e3f2fd, #ede7f6);
       margin: 0;
-      font-size: 24px;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    nav button {
-      margin-left: 10px;
-      padding: 8px 12px;
-      border: none;
-      background: white;
-      color: #6200ea;
-      border-radius: 5px;
+    /* Navigation */
+    nav {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      display: flex;
+      gap: 15px;
+      z-index: 999;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #6a4fb3;
       font-weight: bold;
-      cursor: pointer;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
     }
 
-    #chat-container {
+    nav a:hover {
+      background-color: #d1c4e9;
+    }
+
+    #login {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-top: 30px;
+      margin-top: 120px;
     }
 
-    #chat-box {
-      width: 80%;
-      max-width: 800px;
-      height: 400px;
-      background: white;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      padding: 15px;
-      overflow-y: auto;
-      margin-bottom: 20px;
-    }
-
-    #message-form {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      width: 80%;
-      max-width: 800px;
-    }
-
-    #name-input, #message-input {
-      flex: 1;
+    #login input {
       padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #aaa;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      font-size: 1rem;
+      margin-top: 10px;
     }
 
-    #send-button {
-      padding: 10px 20px;
-      background: #6200ea;
+    #login button {
+      margin-top: 10px;
+      background-color: #6a4fb3;
       color: white;
       border: none;
-      border-radius: 5px;
-      font-weight: bold;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 8px;
       cursor: pointer;
     }
 
-    li {
-      list-style: none;
-      margin-bottom: 8px;
+    #login button:hover {
+      background-color: #593ca7;
+    }
+
+    #chat {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 800px;
+      width: 90%;
+      margin: auto;
+      height: 90vh;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      padding: 2rem;
+    }
+
+    #chat h2 {
+      color: #6a4fb3;
+      margin-bottom: 1rem;
+    }
+
+    #clearChatBtn {
+      margin-left: 20px;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #clearChatBtn:hover {
+      background-color: #e53935;
+    }
+
+    #messages {
+      height: 400px;
+      width: 100%;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background-color: #fafafa;
+    }
+
+    .msg {
+      margin-bottom: 0.8rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      background-color: #f1f0ff;
+    }
+
+    .msg strong {
+      color: #5e35b1;
+    }
+
+    #inputRow {
+      display: flex;
+      width: 100%;
+      gap: 10px;
+    }
+
+    #inputRow input {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid #aaa;
+      border-radius: 10px;
+    }
+
+    #nameInput {
+      max-width: 120px;
+    }
+
+    #inputRow button {
+      background-color: #6a4fb3;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #inputRow button:hover {
+      background-color: #593ca7;
+    }
+
+    @media (max-width: 600px) {
+      #chat {
+        border-radius: 0;
+        height: 100vh;
+      }
+
+      nav {
+        top: 10px;
+        right: 10px;
+        flex-direction: column;
+      }
+
+      #messages {
+        height: 50vh;
+      }
+
+      #inputRow {
+        flex-direction: column;
+        gap: 8px;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>ChatLoom 💬</h1>
-    <nav>
-      <button onclick="location.href='login.html'">Login</button>
-      <button onclick="location.href='signup.html'">Signup</button>
-      <button onclick="location.href='profile.html'">Profile</button>
-    </nav>
-  </header>
 
-  <main id="chat-container">
-    <div id="chat-box">
-      <ul id="messages"></ul>
+  <!-- 🔗 Navigation Links -->
+  <nav>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Signup</a>
+    <a href="profile.html">Profile</a>
+  </nav>
+
+  <!-- 🔒 Login Prompt -->
+  <div id="login">
+    <h2>🔐 Enter Password to Access ChatLoom</h2>
+    <input type="password" id="passwordInput" placeholder="Enter password..." />
+    <button onclick="checkPassword()">Enter</button>
+  </div>
+
+  <!-- 💬 Chat Section -->
+  <div id="chat">
+    <h2>🌟 ChatLoom <button id="clearChatBtn" onclick="clearChat()">Clear Chat</button></h2>
+    <div id="messages"></div>
+    <div id="inputRow">
+      <input type="text" id="nameInput" placeholder="Your name..." />
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button onclick="sendMessage()">Send</button>
     </div>
+  </div>
 
-    <form id="message-form">
-      <input type="text" id="name-input" placeholder="Your name" required />
-      <input type="text" id="message-input" placeholder="Your message..." required />
-      <button id="send-button" type="submit">Send</button>
-    </form>
-  </main>
+  <!-- 📜 Your chat JS script remains unchanged -->
+  <script>
+    // ✅ Same exact JS you pasted – unchanged.
+    // (It's long, so I’m not repeating it here again – already in your version!)
+    const SUPABASE_URL = 'https://hnkugpcnkzunmkbgowxt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhua3VncGNua3p1bm1rYmdvd3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MTM5NDIsImV4cCI6MjA2NzM4OTk0Mn0.z0JnQozVzIapov_KMmNujh1FDl8p9xz9UqXW9rD2WBY';
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const supabase = createClient(
-      'https://hnkugpcnkzunmkbgowxt.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiaW5mcnlwd213ZGtwbmFlaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MjU4MzksImV4cCI6MjA2OTAwMTgzOX0.1MMexu-zrlu5C182gIWgT72SQArD3euFK4lk97IBwcU'
-    );
+    const messagesDiv = document.getElementById('messages');
+    const nameInput = document.getElementById('nameInput');
+    const messageInput = document.getElementById('messageInput');
 
-    const messageForm = document.getElementById('message-form');
-    const messageInput = document.getElementById('message-input');
-    const nameInput = document.getElementById('name-input');
-    const messagesList = document.getElementById('messages');
+    let currentUserName = '';
+
+    function checkPassword() {
+      const input = document.getElementById('passwordInput').value;
+      if (input === '.mysecrets123TIARSP') {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('chat').style.display = 'flex';
+        currentUserName = nameInput.value.trim();
+        loadMessages();
+        startRealtime();
+      } else {
+        alert('Wrong password, try again!');
+      }
+    }
 
     async function loadMessages() {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('messages')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Failed to load messages:', error);
+        alert('Failed to load messages 😢');
         return;
       }
 
-      messagesList.innerHTML = '';
-      data.forEach(msg => {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${msg.name}:</strong> ${msg.content}`;
-        messagesList.appendChild(li);
-      });
-
-      messagesList.scrollTop = messagesList.scrollHeight;
+      messagesDiv.innerHTML = '';
+      data.forEach(addMessageToDOM);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    messageForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const content = messageInput.value.trim();
-      if (!name || !content) return;
+    function addMessageToDOM(msg) {
+      const p = document.createElement('p');
+      p.className = 'msg';
+      p.dataset.id = msg.id;
 
-      const { error } = await supabase.from('messages').insert([{ name, content }]);
-      if (error) {
-        console.error('Send failed:', error);
-      } else {
-        messageInput.value = '';
+      const nameSpan = document.createElement('strong');
+      nameSpan.textContent = `${msg.name}: `;
+
+      const textSpan = document.createElement('span');
+      textSpan.textContent = msg.text;
+      textSpan.className = 'text';
+
+      p.appendChild(nameSpan);
+      p.appendChild(textSpan);
+
+      if (msg.name === nameInput.value.trim()) {
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️';
+        editBtn.style.marginLeft = '10px';
+        editBtn.onclick = () => startEdit(p, msg.id);
+        p.appendChild(editBtn);
       }
-    });
 
-    supabase
-      .channel('realtime:messages')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      }, (payload) => {
-        const msg = payload.new;
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${msg.name}:</strong> ${msg.content}`;
-        messagesList.appendChild(li);
-        messagesList.scrollTop = messagesList.scrollHeight;
-      })
-      .subscribe();
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '❌';
+      deleteBtn.style.marginLeft = '5px';
+      deleteBtn.onclick = () => confirmDelete(p, msg.id);
+      p.appendChild(deleteBtn);
 
+      messagesDiv.appendChild(p);
+    }
+
+    async function sendMessage() {
+  const name = nameInput.value.trim();
+  const text = messageInput.value.trim();
+  if (!name || !text) return;
+
+  currentUserName = name;
+
+  const { error } = await client
+    .from('messages')
+    .insert([{ name, text }]);
+
+  if (error) {
+    alert("😢 Send failed!\n\n" + error.message);
+  } else {
+    messageInput.value = '';
+    loadMessages();  // 👈 Force refresh after sending
+  }
+    }
+
+    function startEdit(p, id) {
+      const textSpan = p.querySelector('.text');
+      const currentText = textSpan.textContent;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentText;
+      input.style.marginLeft = '10px';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '💾';
+      saveBtn.onclick = async () => {
+        const newText = input.value.trim();
+        if (!newText) return;
+
+        const { error } = await client
+          .from('messages')
+          .update({ text: newText })
+          .eq('id', id);
+
+        if (error) {
+          alert("⚠️ Edit failed!\n\n" + error.message);
+        } else {
+          textSpan.textContent = newText;
+          p.replaceChild(textSpan, input);
+          p.removeChild(saveBtn);
+        }
+      };
+
+      p.replaceChild(input, textSpan);
+      p.appendChild(saveBtn);
+    }
+
+    function confirmDelete(p, id) {
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = '✅ Confirm Delete';
+      confirmBtn.style.marginLeft = '5px';
+      confirmBtn.onclick = async () => {
+        const { error } = await client
+          .from('messages')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          alert("😢 Delete failed!\n\n" + error.message);
+        } else {
+          p.remove();
+        }
+      };
+
+      p.appendChild(confirmBtn);
+    }
+
+    async function clearChat() {
+  const confirmClear = confirm("Are you sure you want to delete all messages?");
+  if (!confirmClear) return;
+
+  const { data, error: fetchError } = await client
+    .from('messages')
+    .select('id');
+
+  if (fetchError) {
+    alert("Fetch failed!\n\n" + fetchError.message);
+    return;
+  }
+
+  const idsToDelete = data.map(msg => msg.id);
+
+  if (idsToDelete.length === 0) {
+    alert("Nothing to clear!");
+    return;
+  }
+
+  const { error: deleteError } = await client
+    .from('messages')
+    .delete()
+    .in('id', idsToDelete);
+
+  if (deleteError) {
+    alert("Clear failed!\n\n" + deleteError.message);
+  } else {
     loadMessages();
+  }
+}
+
+
+    function startRealtime() {
+  client
+    .channel('realtime:public:messages')
+    .on('postgres_changes', {
+      event: '*',  // 👈 INSERT + UPDATE + DELETE
+      schema: 'public',
+      table: 'messages'
+    }, payload => {
+      loadMessages();  // 👈 Keep UI in sync
+    })
+    .subscribe();
+    }
   </script>
+
 </body>
 </html>

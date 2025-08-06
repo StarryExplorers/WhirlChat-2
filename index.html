@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | ChatLoom</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="login-form">
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <button type="submit">Login</button>
+  </form>
+  <p id="login-error" style="color:red;"></p>
+  <p><a href="signup.html">Don't have an account? Sign up</a></p>
+
+  <button id="logout-btn" style="display: none;">Logout</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = supabase.createClient(
+      "https://yfxvrcvvmqmbkbzhsxew.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    );
+
+    // If already logged in, show logout
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        document.getElementById("logout-btn").style.display = "block";
+        document.getElementById("login-form").style.display = "none";
+      }
+    });
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        document.getElementById("login-error").textContent = error.message;
+      } else {
+        window.location.href = "chat.html";
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      location.reload();
+    });
+  </script>
+</body>
+</html>
